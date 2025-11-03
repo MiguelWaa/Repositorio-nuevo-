@@ -1,0 +1,12 @@
+Resumen sobre Funciones, Procedimientos, Variables y Cursores en T-SQL
+1. Funciones vs Procedimientos Almacenados
+Las funciones en SQL Server son útiles cuando se necesita realizar cálculos y devolver un valor o una tabla que pueda ser utilizada dentro de una consulta. A diferencia de los procedimientos almacenados, las funciones pueden ser invocadas directamente en una sentencia SELECT, WHERE o incluso dentro de otras funciones. Esto permite reutilizar lógica de negocio sin duplicar código.
+
+2. Manejo de Variables en T-SQL
+El uso de variables en T-SQL permite almacenar valores temporales y manipular datos dinámicos durante la ejecución de las consultas. Son esenciales para realizar operaciones condicionales, cálculos intermedios o adaptar una consulta según parámetros recibidos. Por ejemplo, permiten controlar el flujo lógico de scripts SQL complejos.
+
+3. Uso de Cursores en T-SQL
+Los cursores son útiles cuando se necesita procesar fila por fila un conjunto de resultados. Aunque suelen ser menos eficientes que las operaciones en bloque (como JOIN o UPDATE masivos), son ventajosos cuando se requiere manipular datos de manera individual, ejecutar operaciones condicionales o aplicar lógica compleja en cada registro.
+
+4. Conclusión
+Las funciones, procedimientos almacenados, variables, condicionales y cursores en T-SQL son herramientas clave para automatizar, optimizar y personalizar la manipulación de datos en SQL Server. Su uso adecuado permite crear soluciones más limpias, seguras y reutilizables.
