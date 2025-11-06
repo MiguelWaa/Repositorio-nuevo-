@@ -1,0 +1,106 @@
+/* ============================================================
+   EJEMPLO COMPLETO DE USO DE FUNCIONES, PROCEDIMIENTOS, VARIABLES,
+   CONDICIONALES Y CURSORES EN T-SQL
+   ============================================================ */
+
+-- 1️⃣ Crear tabla de ejemplo
+IF OBJECT_ID('dbo.Ventas', 'U') IS NOT NULL
+    DROP TABLE dbo.Ventas;
+GO
+
+CREATE TABLE dbo.Ventas (
+    IdVenta INT IDENTITY(1,1) PRIMARY KEY,
+    IdCliente INT,
+    Monto DECIMAL(10,2),
+    Fecha DATE
+);
+
+-- Insertar datos de prueba
+INSERT INTO dbo.Ventas (IdCliente, Monto, Fecha) VALUES
+(1, 12000, '2025-01-01'),
+(1, 800,   '2025-02-01'),
+(2, 6000,  '2025-01-05'),
+(3, 1500,  '2025-03-01'),
+(4, 400,   '2025-02-10'),
+(5, 11000, '2025-02-15');
+GO
+
+/* ============================================================
+   2️⃣ FUNCIÓN: Calcular total de ventas por cliente
+   ============================================================ */
+IF OBJECT_ID('dbo.fn_TotalVentasCliente', 'FN') IS NOT NULL
+    DROP FUNCTION dbo.fn_TotalVentasCliente;
+GO
+
+CREATE FUNCTION dbo.fn_TotalVentasCliente (@IdCliente INT)
+RETURNS DECIMAL(10,2)
+AS
+BEGIN
+    DECLARE @Total DECIMAL(10,2);
+
+    SELECT @Total = SUM(Monto)
+    FROM dbo.Ventas
+    WHERE IdCliente = @IdCliente;
+
+    RETURN ISNULL(@Total, 0);
+END;
+GO
+
+/* ============================================================
+   3️⃣ PROCEDIMIENTO ALMACENADO: Evaluar clientes con cursor,
+       usar variables, condicionales y la función anterior.
+   ============================================================ */
+IF OBJECT_ID('dbo.sp_EvaluarClientes', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_EvaluarClientes;
+GO
+
+CREATE PROCEDURE dbo.sp_EvaluarClientes
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdCliente INT;
+    DECLARE @TotalVentas DECIMAL(10,2);
+    DECLARE @Mensaje NVARCHAR(200);
+
+    -- Definimos un cursor para recorrer todos los clientes distintos
+    DECLARE cursorClientes CURSOR FOR
+        SELECT DISTINCT IdCliente FROM dbo.Ventas;
+
+    OPEN cursorClientes;
+    FETCH NEXT FROM cursorClientes INTO @IdCliente;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        -- Llamamos a la función para calcular total de ventas
+        SET @TotalVentas = dbo.fn_TotalVentasCliente(@IdCliente);
+
+        -- Usamos condicionales para clasificar clientes
+        IF @TotalVentas >= 10000
+            SET @Mensaje = CONCAT('Cliente ', @IdCliente, 
+                                   ' tiene ventas ALTAS ($', @TotalVentas, 
+                                   ') - Asignar categoría PREMIUM.');
+        ELSE IF @TotalVentas BETWEEN 5000 AND 9999
+            SET @Mensaje = CONCAT('Cliente ', @IdCliente, 
+                                   ' tiene ventas MEDIAS ($', @TotalVentas, 
+                                   ') - Asignar categoría ORO.');
+        ELSE
+            SET @Mensaje = CONCAT('Cliente ', @IdCliente, 
+                                   ' tiene ventas BAJAS ($', @TotalVentas, 
+                                   ') - Categoría estándar.');
+
+        PRINT @Mensaje;
+
+        FETCH NEXT FROM cursorClientes INTO @IdCliente;
+    END;
+
+    CLOSE cursorClientes;
+    DEALLOCATE cursorClientes;
+END;
+GO
+
+/* ============================================================
+   4️⃣ EJECUCIÓN FINAL
+   ============================================================ */
+EXEC dbo.sp_EvaluarClientes;
+GO
