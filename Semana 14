@@ -1,0 +1,58 @@
+-- Declaración de variables para el ejemplo
+DECLARE @CuentaOrigen INT = 101;
+DECLARE @CuentaDestino INT = 202;
+DECLARE @MontoTransferencia DECIMAL(10, 2) = 500.00;
+DECLARE @SaldoOrigen DECIMAL(10, 2);
+
+-- Simulación de una tabla de Cuentas (si no existe)
+/*
+CREATE TABLE Cuentas (
+    ID INT PRIMARY KEY,
+    Saldo DECIMAL(10, 2)
+);
+INSERT INTO Cuentas VALUES (101, 1500.00), (202, 300.00);
+*/
+
+-- 1. Iniciar la transacción
+BEGIN TRANSACTION TransaccionTransferencia;
+
+-- 2. Obtener el saldo actual de la cuenta de origen
+SELECT @SaldoOrigen = Saldo FROM Cuentas WHERE ID = @CuentaOrigen;
+
+-- 3. Comprobar si hay saldo suficiente
+IF @SaldoOrigen >= @MontoTransferencia
+BEGIN
+    -- Operación 1: Debitar de la cuenta de origen
+    UPDATE Cuentas
+    SET Saldo = Saldo - @MontoTransferencia
+    WHERE ID = @CuentaOrigen;
+
+    -- Operación 2: Acreditar a la cuenta de destino
+    -- Simula una falla intencional: Intentar actualizar una cuenta que no existe (ID 999)
+    -- Si la cuenta 202 existe, cambiar el WHERE para probar el ROLLBACK.
+    UPDATE Cuentas
+    SET Saldo = Saldo + @MontoTransferencia
+    WHERE ID = @CuentaDestino; -- Cambiar a WHERE ID = 999 para forzar un error
+
+    -- Verificar si todas las operaciones fueron exitosas antes de confirmar
+    -- @@ERROR es 0 si la última operación fue exitosa (no disponible en todos los DBMS)
+    -- En SQL Server se usa @@TRANCOUNT para verificar si estamos en una transacción.
+    
+    -- Se asume que ambas operaciones UPDATE fueron exitosas
+    
+    -- 4. Si todo es correcto, confirmar la transacción (COMMIT)
+    COMMIT TRANSACTION TransaccionTransferencia;
+    PRINT '✅ Transacción completada y cambios asegurados con COMMIT.';
+END
+ELSE
+BEGIN
+    -- 5. Si hay un error (saldo insuficiente), deshacer todos los cambios (ROLLBACK)
+    IF @@TRANCOUNT > 0 
+    BEGIN
+        ROLLBACK TRANSACTION TransaccionTransferencia;
+    END
+    PRINT '❌ Transacción fallida: Saldo insuficiente. Se ejecutó ROLLBACK.';
+END
+
+-- Consulta para ver el estado final de los saldos después de la ejecución
+SELECT * FROM Cuentas WHERE ID IN (@CuentaOrigen, @CuentaDestino);
